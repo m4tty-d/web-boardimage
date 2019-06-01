@@ -22,6 +22,7 @@
 import argparse
 import asyncio
 import aiohttp.web
+import aiohttp_cors
 import chess
 import chess.svg
 import cairosvg
@@ -95,8 +96,20 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     app = aiohttp.web.Application()
+
+    cors = aiohttp_cors.setup(app, defaults={
+        "*": aiohttp_cors.ResourceOptions(
+                allow_credentials=True,
+                expose_headers="*",
+                allow_headers="*",
+            )
+    })
+
     service = Service(args.css.read() if args.css else None)
     app.router.add_get("/board.png", service.render_png)
     app.router.add_get("/board.svg", service.render_svg)
+
+    for route in list(app.router.routes()):
+        cors.add(route)
 
     aiohttp.web.run_app(app, port=args.port, host=args.bind, access_log=None)
